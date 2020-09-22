@@ -9,10 +9,10 @@ app = Flask(__name__)
 @app.route('/demographics/<name>')
 def get_data(name):
 
-    # ids = request.args.get('kpi_ids')
+    ids = [int(request.args.get('kpi_id'))]
 
     if name != "data":
-        return {},404
+        return "The endpoint requested does not exist. Currently 'data' is the only endpoint implemented",404
 
     url = 'https://python-exerc.herokuapp.com/data'
     response = requests.get(url=url, timeout=0.1)
@@ -21,7 +21,6 @@ def get_data(name):
         return {}, 500
     
     tree = response.json()
-    ids = [299]
     pruned_tree = data_filters.get_subtree_by_id(ids,tree)
     return json.dumps(pruned_tree), 200
 

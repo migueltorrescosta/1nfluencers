@@ -1,3 +1,7 @@
+import functools
+import pprint
+pp = pprint.PrettyPrinter()
+
 def get_pruned_subtree(indicators, tree):
     """
     Filters a passed tree to only contain the passed indicators.
@@ -32,39 +36,33 @@ def get_subtree_by_id(ids, tree):
         ids: The ids we are looking for. They must be of format int
         tree: The data obtained from python-exerc
     """
-    def get_wanted_indicators(category):        
+    def get_wanted_sub_items(item, tree_structure):
 
-        # If the category has a wanted id we return it. Otherwise we return only the wanted IDs of the son indicators.
-        # If no indicators are wanted we return an empty list of indicators, but we still return the category.
+        if tree_structure == []:
+            # The tree structure must always start above the last node.
+            return "Invalid tree_structure"
 
-        if category["id"] not in ids:
-            category["indicators"] = [indicator for indicator in category["indicators"] if indicator["id"] in ids]
+        child_items_name = tree_structure[0]
+        child_items = item[child_items_name]
 
-        return category
+        if item["id"] in ids:
+            # If the item is in the ids we automatically return all of it
+            return item
 
-    def get_wanted_categories(sub_theme):
+        if len(tree_structure) == 1:
+            # Handles the last node in the structure tree
+            item[child_items_name] = [child_item for child_item in child_items if child_item["id"] in ids]
 
+        else:
+            # We only keep an item if it has a wanted sub item
+            wanted_sub_items_function = functools.partial(get_wanted_sub_items, tree_structure=tree_structure[1:])    
+            item[child_items_name] = list(map(wanted_sub_items_function, child_items))
+            item[child_items_name] = [child_item for child_item in child_items if child_item[tree_structure[1]] != []]
+            
+        return item          
 
-        # If the sub theme is in the ids, we return it completely, otherwise we only return the categories wanted / with an wanted indicator
-        if sub_theme["id"] not in ids:
-            # Removes unwanted categories
-            sub_theme["categories"] = list(map(get_wanted_indicators, sub_theme["categories"]))
-            sub_theme["categories"] = [category for category in sub_theme["categories"] if category["indicators"] != []]
-        return sub_theme
-
-    def get_wanted_sub_themes(theme):
-
-
-        # If the theme is in the ids, we return it completely, otherwise we only return the sub_themes wanted
-        if theme["id"] not in ids:
-            # Removes unwanted sub_themes
-            theme["sub_themes"] = list(map(get_wanted_categories, theme["sub_themes"]))
-            theme["sub_themes"] = [sub_theme for sub_theme in theme["sub_themes"] if sub_theme["categories"] != []]
-        return theme
-
-
-    tree = [get_wanted_sub_themes(theme) for theme in tree]
+    tree_structure = ["sub_themes", "categories", "indicators"]
+    tree = [get_wanted_sub_items(theme, tree_structure) for theme in tree]
     tree = [theme for theme in tree if theme["sub_themes"] != []] 
-
 
     return tree
